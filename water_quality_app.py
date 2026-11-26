@@ -17,7 +17,7 @@ PAGE = r'''<!doctype html>
 button{width:100%;margin-top:17px;border:0;border-radius:14px;padding:14px;background:linear-gradient(110deg,#147e91,#1b9a9c);color:white;font:700 14px "DM Sans";cursor:pointer;box-shadow:0 10px 18px #178a9728;transition:.2s}button:hover{transform:translateY(-1px);filter:brightness(1.04)}.result{background:linear-gradient(150deg,#0d3948,#12576a);color:white;position:relative;overflow:hidden;min-height:410px}.result:after{content:"";position:absolute;width:240px;height:240px;border:1px solid #ffffff12;border-radius:50%;right:-75px;top:-75px;box-shadow:0 0 0 28px #ffffff06,0 0 0 58px #ffffff04}.result .panel-heading h2{color:white}.result .small-label{color:#b9d4dc}.status-pill{display:inline-flex;align-items:center;gap:8px;background:#ffffff12;border:1px solid #ffffff20;border-radius:100px;padding:7px 11px;color:#d7eff2;font-size:11px;font-weight:700}.status-dot{width:7px;height:7px;border-radius:50%;background:#7de2c0}.score-wrap{margin:23px 0 18px;position:relative;z-index:1}.score{font-family:Manrope,sans-serif;font-size:60px;font-weight:800;letter-spacing:-3px;line-height:1}.score span{font-size:17px;letter-spacing:0;color:#a8d3dc;font-weight:600}.scale{height:9px;border-radius:20px;background:linear-gradient(90deg,#ee8e76 0%,#f2c86d 38%,#80d2b3 68%,#4fb7c3 100%);margin:16px 0 9px;position:relative}.marker{position:absolute;top:-4px;width:17px;height:17px;background:white;border:4px solid #164b5c;border-radius:50%;left:0;transition:left .35s}.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:#b4d2dc}.result-title{font-family:Manrope,sans-serif;font-size:21px;font-weight:800;margin:18px 0 7px;position:relative;z-index:1}.result-copy{font-size:13px;line-height:1.6;color:#c2dce3;max-width:370px;position:relative;z-index:1}.advisory{font-size:11px;color:#c6dce0;border-top:1px solid #ffffff1c;padding-top:15px;margin-top:20px;line-height:1.55}.solutions{margin-top:22px}.solutions .panel-heading{margin-bottom:12px}.solution-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.solution-card{background:#fbfdfd;border:1px solid var(--line);border-radius:16px;padding:16px}.solution-card h3{font-size:13px;margin:0 0 8px;font-weight:800}.solution-card p{font-size:12px;line-height:1.6;color:#6c8791;margin:0}.no-results{font-size:13px;color:#718994;padding:14px;background:#f6fafb;border-radius:13px}.notice{font-size:12px;color:#9a6553;padding:12px;border-radius:12px;background:#fff4ec;margin-top:12px}footer{text-align:center;font-size:11px;color:#89a0a8;margin-top:25px}@media(max-width:780px){.layout{grid-template-columns:1fr}.result{min-height:360px}.solution-list{grid-template-columns:1fr}.shell{padding:24px 16px 50px}header{margin-bottom:28px}}
 </style></head><body><div class="shell"><header><div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12z"/><path d="M8.5 16a3.5 3.5 0 0 0 3.5 3"/></svg></div>AquaCheck</div><div class="tag">WATER QUALITY SNAPSHOT</div></header>
 <section class="hero"><div class="eyebrow">Know what's in your water</div><h1>A clearer picture.<br>One drop at a time.</h1><p>Enter any reading you have to get a quick screening snapshot and practical next steps. Leave other fields blank if you haven't measured them yet.</p></section>
-<div class="layout"><section class="panel"><div class="panel-heading"><h2>Your water readings</h2><span class="small-label">Any 1 or more</span></div><form method="POST"><div class="inputs">
+<div class="layout"><section class="panel"><div class="panel-heading"><h2>Your water readings</h2><span class="small-label">Any 1 or more</span></div><form id="readings-form" method="POST"><div class="inputs">
 <div class="metric"><div><label for="ph">Universal coded pH (test strip)</label><input type="hidden" id="ph" name="ph" value="{{ph or ''}}">
 <div class="ph-picker" role="group" aria-label="Choose pH colour from 1 to 14">
 {% for p in range(1,15) %}
@@ -34,6 +34,8 @@ button{width:100%;margin-top:17px;border:0;border-radius:14px;padding:14px;backg
 <section class="panel solutions"><div class="panel-heading"><h2>Target the issue</h2><span class="small-label">Possible next steps</span></div>{% if advice %}<div class="solution-list">{% for item in advice %}<div class="solution-card"><h3>{{item[0]}}</h3><p>{{item[1]}}</p></div>{% endfor %}</div>{% else %}<div class="no-results">Enter at least one reading above to see issue-specific suggestions. For drinking-water safety, confirm with certified testing.</div>{% endif %}</section>
 <footer>Guideline values are screening references only. Local standards and certified testing take precedence.</footer></div>
 <script>
+const readingsForm = document.getElementById("readings-form");
+
 document.querySelectorAll(".ph-choice").forEach(function(choice){
   choice.addEventListener("click", function(){
     document.getElementById("ph").value = choice.dataset.ph;
@@ -42,6 +44,15 @@ document.querySelectorAll(".ph-choice").forEach(function(choice){
       item.classList.toggle("selected", active);
       item.setAttribute("aria-pressed", active ? "true" : "false");
     });
+    readingsForm.requestSubmit();
+  });
+});
+
+// Recalculate after a numeric reading is changed (when the field is committed).
+["turbidity", "tds"].forEach(function(fieldId){
+  const field = document.getElementById(fieldId);
+  field.addEventListener("change", function(){
+    readingsForm.requestSubmit();
   });
 });
 </script>
