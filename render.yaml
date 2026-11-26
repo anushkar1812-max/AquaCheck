@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: aquacheck
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn water_quality_app:app
