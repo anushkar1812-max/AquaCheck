@@ -30,7 +30,13 @@ button{width:100%;margin-top:17px;border:0;border-radius:14px;padding:14px;backg
 .sample-entry-heading{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#244754;margin-bottom:10px}
 .sample-entry-heading .remove-sample{width:auto;margin:0;padding:6px 10px;background:#fff0ed;color:#a65d4e;box-shadow:none;font-size:11px}
 .sample-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.sample-grid label{font-size:11px;font-weight:700;color:#6a8791}
+.sample-grid label,.sample-ph-control>label{font-size:11px;font-weight:700;color:#6a8791}
+.sample-ph-control{grid-column:1/-1}
+.sample-ph-buttons{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px;margin-top:7px}
+.sample-ph-choice{width:100%;min-width:0;margin:0;padding:9px 0;border:2px solid transparent;border-radius:6px;background:var(--ph-color);color:#fff;font:700 11px "DM Sans";line-height:1;box-shadow:none}
+.sample-ph-choice:hover{transform:translateY(-2px);filter:brightness(1.05)}
+.sample-ph-choice.selected{border-color:#173e4a;box-shadow:0 0 0 2px #fff inset}
+@media(max-width:560px){.sample-ph-buttons{grid-template-columns:repeat(7,minmax(0,1fr))}.sample-ph-choice{padding:11px 0}}
 .sample-grid input,.sample-grid select{display:block;width:100%;margin-top:6px;padding:9px;border:1px solid #dce9eb;border-radius:9px;background:#fff;color:#163744;font:600 13px "DM Sans";min-width:0}
 .comparison-list{display:grid;gap:10px;margin-top:16px;position:relative;z-index:1}
 .comparison-item{padding:12px 14px;border:1px solid #ffffff25;background:#ffffff0b;border-radius:13px}
@@ -62,7 +68,15 @@ button{width:100%;margin-top:17px;border:0;border-radius:14px;padding:14px;backg
 <div class="sample-entry">
 <div class="sample-entry-heading"><strong>Sample {{loop.index}}</strong>{% if not loop.first %}<button type="button" class="remove-sample">Remove</button>{% endif %}</div>
 <div class="sample-grid">
-<label>pH (1–14)<select name="sample_ph_{{loop.index0}}"><option value="">—</option>{% for p in range(1,15) %}<option value="{{p}}" {% if sample.ph|string == p|string %}selected{% endif %}>{{p}}</option>{% endfor %}</select></label>
+<div class="sample-ph-control">
+<label>pH colour (1–14)</label>
+<input type="hidden" name="sample_ph_{{loop.index0}}" class="sample-ph-value" value="{{sample.ph or ''}}">
+<div class="sample-ph-buttons" role="group" aria-label="Choose pH for sample {{loop.index}}">
+{% for p in range(1,15) %}
+<button type="button" class="sample-ph-choice {% if sample.ph|string == p|string %}selected{% endif %}" data-ph="{{p}}" aria-pressed="{{ 'true' if sample.ph|string == p|string else 'false' }}" style="--ph-color: {{ph_colors[p-1]}}">{{p}}</button>
+{% endfor %}
+</div>
+</div>
 <label>Turbidity (NTU)<input name="sample_turbidity_{{loop.index0}}" type="number" min="0" step="any" value="{{sample.turbidity or ''}}" placeholder="e.g. 0.8"></label>
 <label>TDS (ppm)<input name="sample_tds_{{loop.index0}}" type="number" min="0" step="any" value="{{sample.tds or ''}}" placeholder="e.g. 240"></label>
 </div></div>
@@ -106,6 +120,17 @@ document.getElementById("clear-readings").addEventListener("click", function(){
 });
 
 const sampleList = document.getElementById("sample-list");
+sampleList.addEventListener("click", function(event){
+  const choice = event.target.closest(".sample-ph-choice");
+  if(!choice) return;
+  const sampleEntry = choice.closest(".sample-entry");
+  sampleEntry.querySelector(".sample-ph-value").value = choice.dataset.ph;
+  sampleEntry.querySelectorAll(".sample-ph-choice").forEach(function(button){
+    const active = button === choice;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+});
 document.getElementById("add-sample").addEventListener("click", function(){
   const index = sampleList.querySelectorAll(".sample-entry").length;
   const entry = document.createElement("div");
@@ -113,7 +138,13 @@ document.getElementById("add-sample").addEventListener("click", function(){
   entry.innerHTML = `
     <div class="sample-entry-heading"><strong>Sample ${index + 1}</strong><button type="button" class="remove-sample">Remove</button></div>
     <div class="sample-grid">
-      <label>pH (1–14)<select name="sample_ph_${index}"><option value="">—</option>${Array.from({length:14},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join("")}</select></label>
+      <div class="sample-ph-control">
+      <label>pH colour (1–14)</label>
+      <input type="hidden" name="sample_ph_${index}" class="sample-ph-value" value="">
+      <div class="sample-ph-buttons" role="group" aria-label="Choose pH for sample ${index + 1}">
+        ${Array.from({length:14},(_,i)=>`<button type="button" class="sample-ph-choice" data-ph="${i+1}" aria-pressed="false" style="--ph-color:${["#d94b55","#e96e4e","#ed9946","#f0c95c","#d9df63","#a9d46f","#79c98c","#49b6a5","#42a6bd","#6b84d3","#8067c8","#9b62bd","#b653a9","#913b86"][i]}">${i+1}</button>`).join("")}
+      </div>
+    </div>
       <label>Turbidity (NTU)<input name="sample_turbidity_${index}" type="number" min="0" step="any" placeholder="e.g. 0.8"></label>
       <label>TDS (ppm)<input name="sample_tds_${index}" type="number" min="0" step="any" placeholder="e.g. 240"></label>
     </div>`;
